@@ -500,7 +500,7 @@
   <script type="module">
     // Firebase SDK imports
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js';
-    import { getAuth, signInWithPopup, signOut, onAuthStateChanged, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js';
+    import { getAuth, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js';
     import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js';
 
     // Firebase config
@@ -523,7 +523,8 @@
     window.firebaseAuth = auth;
     window.firebaseDb = db;
     window.firebaseProvider = provider;
-    window.firebaseSignInWithPopup = signInWithPopup;
+    window.firebaseSignInWithRedirect = signInWithRedirect;
+    window.firebaseGetRedirectResult = getRedirectResult;
     window.firebaseSignOut = signOut;
     window.firebaseOnAuthStateChanged = onAuthStateChanged;
     window.firebaseDoc = doc;
@@ -750,12 +751,10 @@
   // ── Auth handlers ─────────────────────────────────────────
   async function handleSignIn() {
     try {
-      await window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseProvider);
+      await window.firebaseSignInWithRedirect(window.firebaseAuth, window.firebaseProvider);
     } catch (e) {
-      if (e.code !== 'auth/popup-closed-by-user') {
-        console.error('Sign-in error:', e);
-        alert('Sign-in failed. Please try again.');
-      }
+      console.error('Sign-in redirect error:', e);
+      alert('Sign-in failed. Please try again.');
     }
   }
 
@@ -1135,6 +1134,14 @@
     }
     applyDarkMode();
     renderCards();
+
+    // Check for potential redirect errors from a previous sign-in attempt
+    window.firebaseGetRedirectResult(window.firebaseAuth).catch(e => {
+      console.error('Redirect result error:', e);
+      if (e.code !== 'auth/redirect-cancelled-by-user') {
+        alert('Sign-in failed. Please try again.');
+      }
+    });
 
     // Listen for Firebase auth state changes
     window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
