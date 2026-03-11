@@ -166,12 +166,34 @@
       flex: 1;
     }
 
-    .card-actions {
-      display: flex;
-      gap: 0.5rem;
-      margin-left: auto;
-      flex-shrink: 0;
+    /* ── Card meatball menu ── */
+    .card-menu { position: relative; margin-left: auto; flex-shrink: 0; }
+
+    .card-menu-btn {
+      cursor: pointer; border: none; background: none;
+      border-radius: 6px; padding: 0.25rem 0.35rem;
+      font-size: 1rem; color: #9ca3af;
+      transition: background 0.15s, color 0.15s;
     }
+    .card-menu-btn:hover { background: #f3f4f6; color: #374151; }
+
+    .card-menu-dropdown {
+      display: none; position: absolute; right: 0; top: calc(100% + 4px);
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12); min-width: 130px; z-index: 20; overflow: hidden;
+    }
+    .card-menu-dropdown.open { display: block; }
+
+    .card-menu-item {
+      display: flex; align-items: center; gap: 0.5rem; width: 100%;
+      padding: 0.55rem 0.9rem; border: none; background: none;
+      cursor: pointer; font-size: 0.875rem; font-family: inherit;
+      color: #374151; text-align: left; transition: background 0.15s;
+    }
+    .card-menu-item:hover { background: #f3f4f6; }
+    .card-menu-item.delete { color: #b91c1c; }
+    .card-menu-item.delete:hover { background: #fee2e2; }
+    .card-menu-item .mdi { font-size: 1rem; }
 
     .icon-btn {
       cursor: pointer;
@@ -498,6 +520,13 @@
     body.dark .btn-google:hover { background: #4b5563; }
     body.dark .btn-signout:hover { background: #7f1d1d; color: #fca5a5; }
     body.dark .auth-status { color: #6b7280; }
+    body.dark .card-menu-btn { color: #6b7280; }
+    body.dark .card-menu-btn:hover { background: #374151; color: #d1d5db; }
+    body.dark .card-menu-dropdown { background: #1f2937; border-color: #374151; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    body.dark .card-menu-item { color: #d1d5db; }
+    body.dark .card-menu-item:hover { background: #374151; }
+    body.dark .card-menu-item.delete { color: #fca5a5; }
+    body.dark .card-menu-item.delete:hover { background: #7f1d1d; }
 
     /* ── Mobile Responsiveness ── */
     @media (max-width: 640px) {
@@ -937,9 +966,12 @@
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
           <div class="favicon-fallback">${esc(b.title.charAt(0).toUpperCase())}</div>
           <div class="card-title">${esc(b.title)}</div>
-          <div class="card-actions">
-            <button class="icon-btn" onclick="openModal(${b.id})" title="Edit"><span class="mdi mdi-pencil"></span></button>
-            <button class="icon-btn delete" onclick="deleteBookmark(${b.id})" title="Delete"><span class="mdi mdi-delete"></span></button>
+          <div class="card-menu">
+            <button class="card-menu-btn" onclick="toggleCardMenu(event,${b.id})" title="More options"><span class="mdi mdi-dots-vertical"></span></button>
+            <div class="card-menu-dropdown" id="card-menu-${b.id}">
+              <button class="card-menu-item" onclick="closeCardMenus();openModal(${b.id})"><span class="mdi mdi-pencil"></span>Edit</button>
+              <button class="card-menu-item delete" onclick="closeCardMenus();deleteBookmark(${b.id})"><span class="mdi mdi-delete"></span>Delete</button>
+            </div>
           </div>
         </div>
         <a class="card-url" href="${esc(b.url)}" target="_blank" rel="noopener noreferrer">${esc(b.url)}</a>
@@ -1043,6 +1075,18 @@
     closeModal();
     renderCards();
     buildSidebarList();
+  }
+
+  function toggleCardMenu(e, id) {
+    e.stopPropagation();
+    const dropdown = document.getElementById('card-menu-' + id);
+    const isOpen = dropdown.classList.contains('open');
+    closeCardMenus();
+    if (!isOpen) dropdown.classList.add('open');
+  }
+
+  function closeCardMenus() {
+    document.querySelectorAll('.card-menu-dropdown.open').forEach(d => d.classList.remove('open'));
   }
 
   let _confirmCallback = null;
@@ -1204,7 +1248,7 @@
     }
     applyDarkMode();
     renderCards();
-
+    document.addEventListener('click', closeCardMenus);
   }
 
   init();
