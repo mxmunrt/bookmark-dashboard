@@ -144,6 +144,7 @@
       font-size: 1rem;
       font-weight: 700;
       word-break: break-word;
+      flex: 1;
     }
 
     .card-url {
@@ -168,7 +169,8 @@
     .card-actions {
       display: flex;
       gap: 0.5rem;
-      margin-top: 0.4rem;
+      margin-left: auto;
+      flex-shrink: 0;
     }
 
     .icon-btn {
@@ -935,13 +937,13 @@
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
           <div class="favicon-fallback">${esc(b.title.charAt(0).toUpperCase())}</div>
           <div class="card-title">${esc(b.title)}</div>
+          <div class="card-actions">
+            <button class="icon-btn" onclick="openModal(${b.id})" title="Edit"><span class="mdi mdi-pencil"></span></button>
+            <button class="icon-btn delete" onclick="deleteBookmark(${b.id})" title="Delete"><span class="mdi mdi-delete"></span></button>
+          </div>
         </div>
         <a class="card-url" href="${esc(b.url)}" target="_blank" rel="noopener noreferrer">${esc(b.url)}</a>
         ${b.description ? `<div class="card-desc">${esc(b.description)}</div>` : ''}
-        <div class="card-actions">
-          <button class="icon-btn" onclick="openModal(${b.id})" title="Edit"><span class="mdi mdi-pencil"></span></button>
-          <button class="icon-btn delete" onclick="deleteBookmark(${b.id})" title="Delete"><span class="mdi mdi-delete"></span></button>
-        </div>
       </div>
     `).join('');
   }
