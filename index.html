@@ -496,6 +496,7 @@
     body.dark .btn-google:hover { background: #4b5563; }
     body.dark .btn-signout:hover { background: #7f1d1d; color: #fca5a5; }
     body.dark .auth-status { color: #6b7280; }
+    body.dark #confirm-msg { color: #9ca3af; }
   </style>
   <script type="module">
     // Firebase SDK imports
@@ -608,6 +609,18 @@
     <div id="icon-grid"></div>
     <div id="icon-picker-actions">
       <button class="btn btn-secondary" onclick="closeIconPicker()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal" style="width:min(360px,92vw);padding:1.6rem">
+    <h2 style="font-size:1.1rem;margin-bottom:0.5rem">Delete bookmark?</h2>
+    <p style="font-size:0.9rem;color:#6b7280;margin-bottom:1.4rem" id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="confirmCancel()">Cancel</button>
+      <button class="btn" style="background:#ef4444;color:#fff" onclick="confirmProceed()">Delete</button>
     </div>
   </div>
 </div>
@@ -1019,13 +1032,34 @@
     buildSidebarList();
   }
 
+  let _confirmCallback = null;
+
+  function confirmDelete(message, onConfirm) {
+    document.getElementById('confirm-msg').textContent = message;
+    document.getElementById('confirm-overlay').classList.add('open');
+    _confirmCallback = onConfirm;
+  }
+
+  function confirmProceed() {
+    document.getElementById('confirm-overlay').classList.remove('open');
+    if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+  }
+
+  function confirmCancel() {
+    document.getElementById('confirm-overlay').classList.remove('open');
+    _confirmCallback = null;
+  }
+
   function deleteBookmark(id) {
-    if (!confirm('Delete this bookmark?')) return;
-    const list    = loadBookmarks().filter(x => x.id !== id);
-    const allTags = [...new Set(list.flatMap(b => b.tags || []))];
-    saveBookmarks(list);
-    if (activeTag && !allTags.includes(activeTag)) filterBy(null);
-    else { renderCards(); buildSidebarList(); }
+    const bm = loadBookmarks().find(x => x.id === id);
+    const label = bm ? `"${bm.title}" will be permanently removed.` : 'This bookmark will be permanently removed.';
+    confirmDelete(label, () => {
+      const list    = loadBookmarks().filter(x => x.id !== id);
+      const allTags = [...new Set(list.flatMap(b => b.tags || []))];
+      saveBookmarks(list);
+      if (activeTag && !allTags.includes(activeTag)) filterBy(null);
+      else { renderCards(); buildSidebarList(); }
+    });
   }
 
   document.getElementById('f-tag-input').addEventListener('keydown', function(e) {
