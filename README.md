@@ -2,6 +2,8 @@
 
 A sleek, self-hosted bookmarking single-page application (SPA) focused on clean design, categorization, and cross-device synchronization.
 
+**Live Demo / Hosted Version**: This application is already deployed and ready to use at [bookmarks.mrtalukdar.dev](https://bookmarks.mrtalukdar.dev). If you don't want to self-host, you can simply use this hosted version!
+
 ## Features
 
 - **Google Sign-In**: Secure authentication using Firebase so your data is tied to your account.
@@ -53,3 +55,6 @@ python3 -m http.server 8080
 npx serve
 ```
 Then visit `http://localhost:8080`.
+
+---
+**Built with ❤️ by [mrtalukdar.dev](https://mrtalukdar.dev)**
