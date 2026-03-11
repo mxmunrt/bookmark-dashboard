@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Bookmarks</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      flex: 1;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.5rem 1.1rem;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+
+    /* ── Filter bar ── */
+    #filter-bar {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 2rem;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+    #filter-bar.visible { display: flex; }
+    #filter-bar .active-tag-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #ede9fe;
+      color: #4f46e5;
+      border-radius: 999px;
+      padding: 0.2rem 0.65rem;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+    #filter-bar .active-tag-pill button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #4f46e5;
+      font-size: 0.9rem;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── Grid ── */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.2rem;
+      padding: 2rem;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: #9ca3af;
+      padding: 4rem 1rem;
+    }
+    .empty-state p { font-size: 1.1rem; margin-top: 0.5rem; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: box-shadow 0.2s;
+    }
+    .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .favicon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .favicon-fallback {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: #4f46e5;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .card-url {
+      font-size: 0.8rem;
+      color: #4f46e5;
+      text-decoration: none;
+      word-break: break-all;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-url:hover { text-decoration: underline; }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: #6b7280;
+      flex: 1;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+    }
+
+    .icon-btn {
+      cursor: pointer;
+      border: none;
+      background: #f3f4f6;
+      border-radius: 6px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.8rem;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: #e5e7eb; }
+    .icon-btn.delete:hover { background: #fee2e2; color: #b91c1c; }
+
+    /* ── Sidebar ── */
+    #sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 40;
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    #sidebar-overlay.open { display: block; opacity: 1; }
+
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 260px;
+      background: #fff;
+      z-index: 50;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    #sidebar.open { transform: translateX(0); }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 1rem 1rem;
+      border-bottom: 1px solid #e0e0e0;
+      font-weight: 700;
+      font-size: 1rem;
+      gap: 0.5rem;
+    }
+
+    .sidebar-header-title { flex: 1; }
+
+    .sidebar-icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #6b7280;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      padding: 0.3rem;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .sidebar-icon-btn:hover { background: #f3f4f6; color: #374151; }
+    .sidebar-icon-btn.active { color: #4f46e5; background: #ede9fe; }
+
+    #sidebar-list {
+      list-style: none;
+      padding: 0.6rem 0;
+      overflow-y: auto;
+      flex: 1;
+    }
+    #sidebar-list li {
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      margin: 0.1rem 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #374151;
+      transition: background 0.15s;
+      position: relative;
+    }
+    #sidebar-list li:hover { background: #f3f4f6; }
+    #sidebar-list li.active { background: #ede9fe; color: #4f46e5; font-weight: 600; }
+
+    .sidebar-count {
+      margin-left: auto;
+      font-size: 0.75rem;
+      background: #e5e7eb;
+      border-radius: 999px;
+      padding: 0.1rem 0.5rem;
+      color: #6b7280;
+    }
+    #sidebar-list li.active .sidebar-count { background: #c4b5fd; color: #4f46e5; }
+
+    /* edit-mode: pencil button on each tag row */
+    .cat-edit-btn {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #9ca3af;
+      font-size: 0.9rem;
+      padding: 0.15rem 0.3rem;
+      border-radius: 4px;
+      margin-left: auto;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+    .cat-edit-btn:hover { color: #4f46e5; background: #ede9fe; }
+    #sidebar.edit-mode .cat-edit-btn { display: flex; align-items: center; }
+    #sidebar.edit-mode .sidebar-count { display: none; }
+    #sidebar.edit-mode #sidebar-list li { cursor: default; }
+    #sidebar.edit-mode #sidebar-list li:hover { background: transparent; }
+    #sidebar.edit-mode #sidebar-list li.active:hover { background: #ede9fe; }
+
+    /* ── Icon Picker Modal ── */
+    #icon-picker-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #icon-picker-overlay.open { display: flex; }
+
+    #icon-picker {
+      background: #fff;
+      border-radius: 14px;
+      padding: 1.5rem;
+      width: min(400px, 92vw);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    }
+
+    #icon-picker h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    #icon-picker-subtitle {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 1rem;
+    }
+
+    #icon-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.4rem;
+    }
+
+    .icon-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      padding: 0.55rem 0.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+      background: none;
+    }
+    .icon-option:hover { background: #f3f4f6; }
+    .icon-option.selected { border-color: #4f46e5; background: #ede9fe; }
+    .icon-option .mdi { font-size: 1.4rem; color: #1a1a1a; }
+    .icon-option span.icon-label {
+      font-size: 0.6rem;
+      color: #6b7280;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    #icon-picker-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    /* ── Bookmark modal ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 2rem;
+      width: min(480px, 92vw);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    }
+
+    .modal h2 { font-size: 1.2rem; margin-bottom: 1.2rem; }
+
+    .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
+    .field label { font-size: 0.85rem; font-weight: 600; color: #374151; }
+    .field input, .field textarea {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.15s;
+      outline: none;
+      width: 100%;
+    }
+    .field input:focus, .field textarea:focus { border-color: #4f46e5; }
+    .field textarea { resize: vertical; min-height: 72px; }
+
+    #f-tags-display {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.4rem;
+    }
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #ede9fe;
+      color: #4f46e5;
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem 0.2rem 0.7rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .tag-chip button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #7c3aed;
+      font-size: 0.85rem;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+    }
+    .tag-chip button:hover { color: #4f46e5; }
+
+    .modal-actions { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1.2rem; }
+
+    /* ── Dark mode ── */
+    body.dark { background: #111827; color: #f3f4f6; }
+    body.dark header { background: #1f2937; border-bottom-color: #374151; }
+    body.dark #filter-bar { background: #1f2937; border-bottom-color: #374151; }
+    body.dark #filter-bar .active-tag-pill { background: #312e81; color: #a5b4fc; }
+    body.dark #filter-bar .active-tag-pill button { color: #a5b4fc; }
+    body.dark .card { background: #1f2937; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+    body.dark .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+    body.dark .card-desc { color: #9ca3af; }
+    body.dark .icon-btn { background: #374151; color: #d1d5db; }
+    body.dark .icon-btn:hover { background: #4b5563; }
+    body.dark .icon-btn.delete:hover { background: #7f1d1d; color: #fca5a5; }
+    body.dark .btn-secondary { background: #374151; color: #d1d5db; }
+    body.dark .modal { background: #1f2937; }
+    body.dark .field label { color: #d1d5db; }
+    body.dark .field input, body.dark .field textarea {
+      background: #111827; border-color: #374151; color: #f3f4f6;
+    }
+    body.dark .field input:focus, body.dark .field textarea:focus { border-color: #6366f1; }
+    body.dark .empty-state { color: #6b7280; }
+    body.dark #sidebar { background: #1f2937; box-shadow: 4px 0 24px rgba(0,0,0,0.4); }
+    body.dark .sidebar-header { border-bottom-color: #374151; }
+    body.dark .sidebar-icon-btn { color: #9ca3af; }
+    body.dark .sidebar-icon-btn:hover { background: #374151; color: #d1d5db; }
+    body.dark .sidebar-icon-btn.active { color: #a5b4fc; background: #312e81; }
+    body.dark #sidebar-list li { color: #d1d5db; }
+    body.dark #sidebar-list li:hover { background: #374151; }
+    body.dark #sidebar-list li.active { background: #312e81; color: #a5b4fc; }
+    body.dark #sidebar.edit-mode #sidebar-list li:hover { background: transparent; }
+    body.dark #sidebar.edit-mode #sidebar-list li.active:hover { background: #312e81; }
+    body.dark .sidebar-count { background: #374151; color: #9ca3af; }
+    body.dark #sidebar-list li.active .sidebar-count { background: #4338ca; color: #c7d2fe; }
+    body.dark .cat-edit-btn { color: #6b7280; }
+    body.dark .cat-edit-btn:hover { color: #a5b4fc; background: #312e81; }
+    body.dark .tag-chip { background: #312e81; color: #a5b4fc; }
+    body.dark .tag-chip button { color: #a5b4fc; }
+    body.dark #icon-picker { background: #1f2937; }
+    body.dark #icon-picker-subtitle { color: #6b7280; }
+    body.dark .icon-option:hover { background: #374151; }
+    body.dark .icon-option.selected { border-color: #6366f1; background: #312e81; }
+    body.dark .icon-option .mdi { color: #f3f4f6; }
+    body.dark .icon-option span.icon-label { color: #9ca3af; }
+
+    /* ── Auth UI ── */
+    .auth-area { display: flex; align-items: center; gap: 0.6rem; }
+    .auth-user { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; color: #374151; }
+    .auth-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #e5e7eb; }
+    .btn-google {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      background: #fff; color: #374151; border: 1px solid #d1d5db;
+      border-radius: 8px; padding: 0.45rem 0.9rem; font-size: 0.85rem;
+      font-weight: 600; cursor: pointer; transition: background 0.15s, box-shadow 0.15s;
+    }
+    .btn-google:hover { background: #f9fafb; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .btn-google svg { width: 16px; height: 16px; }
+    .btn-signout {
+      background: none; border: none; cursor: pointer; color: #9ca3af;
+      font-size: 1.1rem; display: flex; align-items: center; padding: 0.3rem;
+      border-radius: 6px; transition: background 0.15s, color 0.15s;
+    }
+    .btn-signout:hover { background: #fee2e2; color: #b91c1c; }
+    .auth-status { font-size: 0.75rem; color: #9ca3af; font-weight: 400; }
+    body.dark .auth-user { color: #d1d5db; }
+    body.dark .auth-avatar { border-color: #4b5563; }
+    body.dark .btn-google { background: #374151; color: #d1d5db; border-color: #4b5563; }
+    body.dark .btn-google:hover { background: #4b5563; }
+    body.dark .btn-signout:hover { background: #7f1d1d; color: #fca5a5; }
+    body.dark .auth-status { color: #6b7280; }
+  </style>
+  <script type="module">
+    // Firebase SDK imports
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js';
+    import { getAuth, signInWithPopup, signOut, onAuthStateChanged, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js';
+    import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js';
+
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBRocQivNxXpXUJ9PA1DjgUbU_MijLCcFI",
+      authDomain: "bookmark-dashboard-71eac.firebaseapp.com",
+      projectId: "bookmark-dashboard-71eac",
+      storageBucket: "bookmark-dashboard-71eac.firebasestorage.app",
+      messagingSenderId: "767430128890",
+      appId: "1:767430128890:web:b597ada83ec777bf98c543",
+      measurementId: "G-T9XHMH185X"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // Expose to global scope for inline handlers
+    window.firebaseAuth = auth;
+    window.firebaseDb = db;
+    window.firebaseProvider = provider;
+    window.firebaseSignInWithPopup = signInWithPopup;
+    window.firebaseSignOut = signOut;
+    window.firebaseOnAuthStateChanged = onAuthStateChanged;
+    window.firebaseDoc = doc;
+    window.firebaseGetDoc = getDoc;
+    window.firebaseSetDoc = setDoc;
+  </script>
+</head>
+<body>
+
+<header>
+  <button class="btn btn-secondary" onclick="openSidebar()" title="Categories"><span class="mdi mdi-menu"></span></button>
+  <h1>My Bookmarks</h1>
+  <div style="display:flex;gap:0.5rem;align-items:center">
+    <div class="auth-area" id="auth-area">
+      <!-- Sign-in button (shown when signed out) -->
+      <button class="btn-google" id="btn-sign-in" onclick="handleSignIn()" title="Sign in to sync bookmarks">
+        <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.01 24.01 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Sign in
+      </button>
+      <!-- User info (shown when signed in) -->
+      <div class="auth-user" id="auth-user-info" style="display:none">
+        <img class="auth-avatar" id="auth-avatar" src="" alt="" />
+        <span id="auth-name"></span>
+      </div>
+      <button class="btn-signout" id="btn-sign-out" onclick="handleSignOut()" style="display:none" title="Sign out"><span class="mdi mdi-logout"></span></button>
+    </div>
+    <button class="btn btn-secondary" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode"><span class="mdi mdi-weather-night"></span></button>
+    <button class="btn btn-primary" onclick="openModal()" title="Add Bookmark"><span class="mdi mdi-bookmark-plus"></span></button>
+  </div>
+</header>
+
+<div id="filter-bar">
+  Filtering by:
+  <span class="active-tag-pill">
+    <span id="active-tag-text"></span>
+    <button onclick="filterBy(null)" title="Clear filter"><span class="mdi mdi-close"></span></button>
+  </span>
+</div>
+
+<div id="grid"></div>
+
+<!-- Sidebar -->
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside id="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-header-title">Categories</span>
+    <button class="sidebar-icon-btn" id="edit-mode-btn" onclick="toggleEditMode()" title="Edit category icons"><span class="mdi mdi-cog"></span></button>
+    <button class="sidebar-icon-btn" onclick="closeSidebar()" title="Close"><span class="mdi mdi-close"></span></button>
+  </div>
+  <ul id="sidebar-list"></ul>
+</aside>
+
+<!-- Icon Picker Modal -->
+<div id="icon-picker-overlay" onclick="handleIconPickerOverlayClick(event)">
+  <div id="icon-picker">
+    <h3>Choose icon</h3>
+    <p id="icon-picker-subtitle"></p>
+    <div id="icon-grid"></div>
+    <div id="icon-picker-actions">
+      <button class="btn btn-secondary" onclick="closeIconPicker()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Bookmark Modal -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <h2 id="modal-title">Add Bookmark</h2>
+    <div class="field">
+      <label for="f-title">Title <span style="color:#ef4444">*</span></label>
+      <input id="f-title" type="text" placeholder="e.g. GitHub" />
+    </div>
+    <div class="field">
+      <label for="f-url">URL <span style="color:#ef4444">*</span></label>
+      <input id="f-url" type="url" placeholder="https://..." />
+    </div>
+    <div class="field">
+      <label for="f-desc">Description <span style="color:#9ca3af">(optional)</span></label>
+      <textarea id="f-desc" placeholder="A short note about this bookmark"></textarea>
+    </div>
+    <div class="field">
+      <label for="f-tag-input">Tags <span style="color:#9ca3af">(optional — press Enter to add)</span></label>
+      <input id="f-tag-input" type="text" placeholder="e.g. AI, Self-hosted" autocomplete="off" />
+      <div id="f-tags-display"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBookmark()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'bookmarks';
+  const ICONS_KEY   = 'tagIcons';
+
+  let editingId      = null;
+  let currentTags    = [];
+  let activeTag      = null;
+  let pickingTag     = null;
+  let sidebarEditing = false;
+  let currentUser    = null;   // Firebase user object
+  let cachedBookmarks = null;  // in-memory cache
+  let cachedTagIcons  = null;  // in-memory cache
+
+  // ── Icon catalogue (30 icons) ──────────────────────────────
+  const ICON_OPTIONS = [
+    { icon: 'mdi-bookmark',               label: 'Bookmark'   },
+    { icon: 'mdi-robot',                  label: 'AI'         },
+    { icon: 'mdi-server',                 label: 'Server'     },
+    { icon: 'mdi-home-automation',        label: 'Home'       },
+    { icon: 'mdi-cloud',                  label: 'Cloud'      },
+    { icon: 'mdi-database',               label: 'Database'   },
+    { icon: 'mdi-code-braces',            label: 'Code'       },
+    { icon: 'mdi-docker',                 label: 'Docker'     },
+    { icon: 'mdi-star',                   label: 'Favourites' },
+    { icon: 'mdi-heart',                  label: 'Liked'      },
+    { icon: 'mdi-book-open-variant',      label: 'Reading'    },
+    { icon: 'mdi-video',                  label: 'Video'      },
+    { icon: 'mdi-music',                  label: 'Music'      },
+    { icon: 'mdi-image',                  label: 'Photos'     },
+    { icon: 'mdi-cart',                   label: 'Shopping'   },
+    { icon: 'mdi-newspaper-variant',      label: 'News'       },
+    { icon: 'mdi-school',                 label: 'Learning'   },
+    { icon: 'mdi-gamepad-variant',        label: 'Gaming'     },
+    { icon: 'mdi-earth',                  label: 'Web'        },
+    { icon: 'mdi-tools',                  label: 'Tools'      },
+    { icon: 'mdi-shield-lock',            label: 'Security'   },
+    { icon: 'mdi-currency-usd',           label: 'Finance'    },
+    { icon: 'mdi-chart-line',             label: 'Analytics'  },
+    { icon: 'mdi-folder',                 label: 'Folder'     },
+    { icon: 'mdi-tag',                    label: 'Tag'        },
+    { icon: 'mdi-wrench',                 label: 'Maintenance'},
+    { icon: 'mdi-terminal',               label: 'Terminal'   },
+    { icon: 'mdi-flask',                  label: 'Science'    },
+    { icon: 'mdi-account-group',          label: 'Community'  },
+    { icon: 'mdi-lightning-bolt',         label: 'Quick'      },
+  ];
+
+  // ── Defaults ──────────────────────────────────────────────
+  const DEFAULTS = [
+    { id: 1,  title: 'Ollama',              url: 'https://ollama.com',                  description: 'Run large language models locally on your machine',         tags: ['AI', 'Local'] },
+    { id: 2,  title: 'Open WebUI',          url: 'https://openwebui.com',               description: 'Self-hosted web UI for Ollama and other LLM backends',      tags: ['AI', 'Self-hosted'] },
+    { id: 3,  title: 'Home Assistant',      url: 'https://www.home-assistant.io',        description: 'Open source home automation platform',                      tags: ['Self-hosted', 'Home Automation'] },
+    { id: 4,  title: 'Nextcloud',           url: 'https://nextcloud.com',               description: 'Self-hosted file sync, calendar, and collaboration suite',  tags: ['Self-hosted', 'Storage'] },
+    { id: 5,  title: 'Portainer',           url: 'https://www.portainer.io',            description: 'Docker & Kubernetes management UI',                         tags: ['Self-hosted', 'DevOps'] },
+    { id: 6,  title: 'Hugging Face',        url: 'https://huggingface.co',              description: 'Browse and download open-source AI models and datasets',    tags: ['AI', 'Models'] },
+    { id: 7,  title: 'LM Studio',           url: 'https://lmstudio.ai',                description: 'Desktop app to discover, download, and run local LLMs',     tags: ['AI', 'Local'] },
+    { id: 8,  title: 'Coolify',             url: 'https://coolify.io',                  description: 'Self-hosted Heroku/Netlify alternative for deploying apps', tags: ['Self-hosted', 'DevOps'] },
+    { id: 9,  title: 'Immich',              url: 'https://immich.app',                  description: 'Self-hosted Google Photos alternative',                     tags: ['Self-hosted', 'Storage'] },
+    { id: 10, title: 'r/selfhosted',        url: 'https://www.reddit.com/r/selfhosted', description: 'Community for self-hosted software and services',           tags: ['Community'] },
+    { id: 11, title: 'Awesome Self-Hosted', url: 'https://awesome-selfhosted.net',      description: 'Curated list of self-hostable software',                   tags: ['Self-hosted', 'Community'] },
+    { id: 12, title: 'LocalAI',             url: 'https://localai.io',                  description: 'Free, open-source OpenAI-compatible API running locally',   tags: ['AI', 'Local'] },
+  ];
+
+  // ── Storage (localStorage + Firestore hybrid) ─────────────
+  function loadBookmarks() {
+    if (currentUser && cachedBookmarks !== null) return cachedBookmarks;
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveBookmarks(list) {
+    if (currentUser) {
+      cachedBookmarks = list;
+      syncBookmarksToFirestore(list);
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function loadTagIcons() {
+    if (currentUser && cachedTagIcons !== null) return cachedTagIcons;
+    try { return JSON.parse(localStorage.getItem(ICONS_KEY)) || {}; }
+    catch { return {}; }
+  }
+
+  function saveTagIcons(map) {
+    if (currentUser) {
+      cachedTagIcons = map;
+      syncTagIconsToFirestore(map);
+    }
+    localStorage.setItem(ICONS_KEY, JSON.stringify(map));
+  }
+
+  function getTagIcon(tag) {
+    return loadTagIcons()[tag] || 'mdi-tag-outline';
+  }
+
+  // ── Firestore sync helpers ────────────────────────────────
+  async function syncBookmarksToFirestore(list) {
+    if (!currentUser) return;
+    try {
+      const docRef = window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'data', 'bookmarks');
+      await window.firebaseSetDoc(docRef, { items: list });
+    } catch (e) { console.error('Failed to sync bookmarks:', e); }
+  }
+
+  async function syncTagIconsToFirestore(map) {
+    if (!currentUser) return;
+    try {
+      const docRef = window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'data', 'tagIcons');
+      await window.firebaseSetDoc(docRef, { icons: map });
+    } catch (e) { console.error('Failed to sync tag icons:', e); }
+  }
+
+  async function loadFromFirestore(uid) {
+    try {
+      const bmRef = window.firebaseDoc(window.firebaseDb, 'users', uid, 'data', 'bookmarks');
+      const bmSnap = await window.firebaseGetDoc(bmRef);
+
+      const icRef = window.firebaseDoc(window.firebaseDb, 'users', uid, 'data', 'tagIcons');
+      const icSnap = await window.firebaseGetDoc(icRef);
+
+      return {
+        bookmarks: bmSnap.exists() ? bmSnap.data().items : null,
+        tagIcons:  icSnap.exists() ? icSnap.data().icons : null,
+      };
+    } catch (e) {
+      console.error('Failed to load from Firestore:', e);
+      return { bookmarks: null, tagIcons: null };
+    }
+  }
+
+  // ── Auth handlers ─────────────────────────────────────────
+  async function handleSignIn() {
+    try {
+      await window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseProvider);
+    } catch (e) {
+      if (e.code !== 'auth/popup-closed-by-user') {
+        console.error('Sign-in error:', e);
+        alert('Sign-in failed. Please try again.');
+      }
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await window.firebaseSignOut(window.firebaseAuth);
+    } catch (e) {
+      console.error('Sign-out error:', e);
+    }
+  }
+
+  function updateAuthUI(user) {
+    const btnSignIn  = document.getElementById('btn-sign-in');
+    const userInfo   = document.getElementById('auth-user-info');
+    const btnSignOut = document.getElementById('btn-sign-out');
+
+    if (user) {
+      btnSignIn.style.display  = 'none';
+      userInfo.style.display   = 'flex';
+      btnSignOut.style.display = 'flex';
+      document.getElementById('auth-avatar').src = user.photoURL || '';
+      document.getElementById('auth-name').textContent = user.displayName || 'User';
+    } else {
+      btnSignIn.style.display  = 'inline-flex';
+      userInfo.style.display   = 'none';
+      btnSignOut.style.display = 'none';
+    }
+  }
+
+  async function onUserSignedIn(user) {
+    currentUser = user;
+    updateAuthUI(user);
+
+    // Load cloud data
+    const cloud = await loadFromFirestore(user.uid);
+
+    if (cloud.bookmarks !== null) {
+      // Returning user — load cloud data
+      cachedBookmarks = cloud.bookmarks;
+      cachedTagIcons  = cloud.tagIcons || {};
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cachedBookmarks));
+      localStorage.setItem(ICONS_KEY, JSON.stringify(cachedTagIcons));
+    } else {
+      // New user — migrate localStorage or use defaults
+      const local = loadLocalBookmarks();
+      const localIcons = loadLocalTagIcons();
+
+      if (local.length > 0) {
+        // Migrate existing localStorage bookmarks
+        cachedBookmarks = local;
+        cachedTagIcons  = localIcons;
+      } else {
+        // Brand new — pre-populate with defaults
+        cachedBookmarks = [...DEFAULTS];
+        cachedTagIcons  = {};
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cachedBookmarks));
+      }
+
+      // Push to Firestore
+      await syncBookmarksToFirestore(cachedBookmarks);
+      await syncTagIconsToFirestore(cachedTagIcons);
+    }
+
+    activeTag = null;
+    renderCards();
+    renderFilterBar();
+    buildSidebarList();
+  }
+
+  function onUserSignedOut() {
+    currentUser     = null;
+    cachedBookmarks = null;
+    cachedTagIcons  = null;
+    updateAuthUI(null);
+
+    // Fall back to localStorage (guest mode)
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULTS));
+    }
+
+    activeTag = null;
+    renderCards();
+    renderFilterBar();
+    buildSidebarList();
+  }
+
+  // Pure localStorage reads (bypass cache, for migration)
+  function loadLocalBookmarks() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+  function loadLocalTagIcons() {
+    try { return JSON.parse(localStorage.getItem(ICONS_KEY)) || {}; }
+    catch { return {}; }
+  }
+
+  // ── Render ────────────────────────────────────────────────
+  function faviconUrl(url) {
+    try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`; }
+    catch { return ''; }
+  }
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderCards() {
+    const all  = loadBookmarks();
+    const list = activeTag === null ? all : all.filter(b => (b.tags || []).includes(activeTag));
+    const grid = document.getElementById('grid');
+
+    if (list.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div style="font-size:2.5rem">🔖</div>
+          <p>${activeTag
+            ? `No bookmarks tagged <strong>${esc(activeTag)}</strong>.`
+            : 'No bookmarks yet. Click <strong>+ Add Bookmark</strong> to get started.'}</p>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(b => `
+      <div class="card">
+        <div class="card-header">
+          <img class="favicon" src="${faviconUrl(b.url)}" alt=""
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+          <div class="favicon-fallback">${esc(b.title.charAt(0).toUpperCase())}</div>
+          <div class="card-title">${esc(b.title)}</div>
+        </div>
+        <a class="card-url" href="${esc(b.url)}" target="_blank" rel="noopener noreferrer">${esc(b.url)}</a>
+        ${b.description ? `<div class="card-desc">${esc(b.description)}</div>` : ''}
+        <div class="card-actions">
+          <button class="icon-btn" onclick="openModal(${b.id})" title="Edit"><span class="mdi mdi-pencil"></span></button>
+          <button class="icon-btn delete" onclick="deleteBookmark(${b.id})" title="Delete"><span class="mdi mdi-delete"></span></button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderFilterBar() {
+    const bar = document.getElementById('filter-bar');
+    if (activeTag) {
+      document.getElementById('active-tag-text').textContent = activeTag;
+      bar.classList.add('visible');
+    } else {
+      bar.classList.remove('visible');
+    }
+  }
+
+  // ── Bookmark modal ────────────────────────────────────────
+  function renderTagChips() {
+    document.getElementById('f-tags-display').innerHTML = currentTags.map(t => `
+      <span class="tag-chip">
+        ${esc(t)}
+        <button onclick="removeTag('${esc(t)}')" title="Remove tag"><span class="mdi mdi-close"></span></button>
+      </span>
+    `).join('');
+  }
+
+  function addTag(raw) {
+    const tag = raw.trim().replace(/,+$/, '').trim();
+    if (tag && !currentTags.includes(tag)) {
+      currentTags.push(tag);
+      renderTagChips();
+    }
+  }
+
+  function removeTag(tag) {
+    currentTags = currentTags.filter(t => t !== tag);
+    renderTagChips();
+  }
+
+  function openModal(id) {
+    editingId = id || null;
+    document.getElementById('modal-title').textContent = id ? 'Edit Bookmark' : 'Add Bookmark';
+
+    if (id) {
+      const b = loadBookmarks().find(x => x.id === id);
+      if (b) {
+        document.getElementById('f-title').value       = b.title;
+        document.getElementById('f-url').value         = b.url;
+        document.getElementById('f-desc').value        = b.description || '';
+        currentTags = [...(b.tags || [])];
+      }
+    } else {
+      document.getElementById('f-title').value = '';
+      document.getElementById('f-url').value   = '';
+      document.getElementById('f-desc').value  = '';
+      currentTags = [];
+    }
+
+    renderTagChips();
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('f-title').focus();
+  }
+
+  function closeModal() {
+    document.getElementById('overlay').classList.remove('open');
+    document.getElementById('f-tag-input').value = '';
+    editingId   = null;
+    currentTags = [];
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('overlay')) closeModal();
+  }
+
+  function saveBookmark() {
+    const pendingTag = document.getElementById('f-tag-input').value.trim();
+    if (pendingTag) addTag(pendingTag);
+
+    const title       = document.getElementById('f-title').value.trim();
+    const url         = document.getElementById('f-url').value.trim();
+    const description = document.getElementById('f-desc').value.trim();
+
+    if (!title) { alert('Please enter a title.'); return; }
+    if (!url)   { alert('Please enter a URL.');   return; }
+
+    let normalizedUrl = url;
+    if (!/^https?:\/\//i.test(url)) normalizedUrl = 'https://' + url;
+
+    const list = loadBookmarks();
+
+    if (editingId) {
+      const idx = list.findIndex(x => x.id === editingId);
+      if (idx !== -1) list[idx] = { id: editingId, title, url: normalizedUrl, description, tags: [...currentTags] };
+    } else {
+      list.push({ id: Date.now(), title, url: normalizedUrl, description, tags: [...currentTags] });
+    }
+
+    saveBookmarks(list);
+    closeModal();
+    renderCards();
+    buildSidebarList();
+  }
+
+  function deleteBookmark(id) {
+    if (!confirm('Delete this bookmark?')) return;
+    const list    = loadBookmarks().filter(x => x.id !== id);
+    const allTags = [...new Set(list.flatMap(b => b.tags || []))];
+    saveBookmarks(list);
+    if (activeTag && !allTags.includes(activeTag)) filterBy(null);
+    else { renderCards(); buildSidebarList(); }
+  }
+
+  document.getElementById('f-tag-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag(this.value);
+      this.value = '';
+    }
+  });
+
+  // ── Sidebar ───────────────────────────────────────────────
+  function buildSidebarList() {
+    const all = loadBookmarks();
+    const tagCounts = {};
+    all.forEach(b => (b.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
+    const tags = Object.keys(tagCounts).sort();
+
+    let html = `<li class="${activeTag === null ? 'active' : ''}" onclick="${sidebarEditing ? '' : 'filterBy(null)'}">
+      <span class="mdi mdi-bookmark-multiple-outline"></span>
+      All Bookmarks
+      <span class="sidebar-count">${all.length}</span>
+    </li>`;
+
+    html += tags.map(t => {
+      const icon = getTagIcon(t);
+      return `<li class="${activeTag === t ? 'active' : ''}" onclick="${sidebarEditing ? '' : `filterBy('${esc(t)}')`}">
+        <span class="mdi ${icon}"></span>
+        ${esc(t)}
+        <span class="sidebar-count">${tagCounts[t]}</span>
+        <button class="cat-edit-btn" onclick="openIconPicker('${esc(t)}')" title="Change icon">
+          <span class="mdi mdi-pencil"></span>
+        </button>
+      </li>`;
+    }).join('');
+
+    if (tags.length === 0) {
+      html += `<li style="color:#9ca3af;cursor:default;font-style:italic;pointer-events:none">No tags yet</li>`;
+    }
+
+    document.getElementById('sidebar-list').innerHTML = html;
+  }
+
+  function openSidebar() {
+    buildSidebarList();
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebar-overlay').classList.add('open');
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+    if (sidebarEditing) toggleEditMode();
+  }
+
+  function filterBy(tag) {
+    activeTag = tag;
+    renderCards();
+    renderFilterBar();
+    buildSidebarList();
+    closeSidebar();
+  }
+
+  function toggleEditMode() {
+    sidebarEditing = !sidebarEditing;
+    const sidebar = document.getElementById('sidebar');
+    const btn     = document.getElementById('edit-mode-btn');
+    sidebar.classList.toggle('edit-mode', sidebarEditing);
+    btn.classList.toggle('active', sidebarEditing);
+    buildSidebarList();
+  }
+
+  // ── Icon Picker ───────────────────────────────────────────
+  function openIconPicker(tag) {
+    pickingTag = tag;
+    const currentIcon = getTagIcon(tag);
+
+    document.getElementById('icon-picker-subtitle').textContent = `for "${tag}"`;
+
+    document.getElementById('icon-grid').innerHTML = ICON_OPTIONS.map(o => `
+      <button class="icon-option ${o.icon === currentIcon ? 'selected' : ''}"
+              onclick="selectIcon('${o.icon}')"
+              title="${o.label}">
+        <span class="mdi ${o.icon}"></span>
+        <span class="icon-label">${o.label}</span>
+      </button>
+    `).join('');
+
+    document.getElementById('icon-picker-overlay').classList.add('open');
+  }
+
+  function closeIconPicker() {
+    document.getElementById('icon-picker-overlay').classList.remove('open');
+    pickingTag = null;
+  }
+
+  function handleIconPickerOverlayClick(e) {
+    if (e.target === document.getElementById('icon-picker-overlay')) closeIconPicker();
+  }
+
+  function selectIcon(iconClass) {
+    if (!pickingTag) return;
+    const icons = loadTagIcons();
+    icons[pickingTag] = iconClass;
+    saveTagIcons(icons);
+    closeIconPicker();
+    buildSidebarList();
+  }
+
+  // ── Dark mode ─────────────────────────────────────────────
+  function toggleDark() {
+    const isDark = document.body.classList.toggle('dark');
+    localStorage.setItem('darkMode', isDark ? '1' : '0');
+    document.getElementById('dark-toggle').querySelector('span').className =
+      isDark ? 'mdi mdi-weather-sunny' : 'mdi mdi-weather-night';
+  }
+
+  function applyDarkMode() {
+    if (localStorage.getItem('darkMode') === '1') {
+      document.body.classList.add('dark');
+      document.getElementById('dark-toggle').querySelector('span').className = 'mdi mdi-weather-sunny';
+    }
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  function init() {
+    // Load localStorage defaults for immediate render (guest mode)
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULTS));
+    }
+    applyDarkMode();
+    renderCards();
+
+    // Listen for Firebase auth state changes
+    window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
+      if (user) {
+        onUserSignedIn(user);
+      } else {
+        onUserSignedOut();
+      }
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>
