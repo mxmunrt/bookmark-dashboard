@@ -506,7 +506,7 @@
     // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBRocQivNxXpXUJ9PA1DjgUbU_MijLCcFI",
-      authDomain: "bookmark-dashboard-71eac.firebaseapp.com",
+      authDomain: "bookmarks.mrtalukdar.dev",
       projectId: "bookmark-dashboard-71eac",
       storageBucket: "bookmark-dashboard-71eac.firebasestorage.app",
       messagingSenderId: "767430128890",
@@ -1135,8 +1135,12 @@
     applyDarkMode();
     renderCards();
 
-    // Check for potential redirect errors from a previous sign-in attempt
-    window.firebaseGetRedirectResult(window.firebaseAuth).catch(e => {
+    // Complete the redirect sign-in flow if returning from Google OAuth
+    window.firebaseGetRedirectResult(window.firebaseAuth).then(result => {
+      if (result && result.user) {
+        console.log('Redirect sign-in complete:', result.user.displayName);
+      }
+    }).catch(e => {
       console.error('Redirect result error:', e);
       if (e.code !== 'auth/redirect-cancelled-by-user') {
         alert('Sign-in failed. Please try again.');
