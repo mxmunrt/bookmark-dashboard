@@ -530,6 +530,29 @@
     window.firebaseDoc = doc;
     window.firebaseGetDoc = getDoc;
     window.firebaseSetDoc = setDoc;
+
+    // Auth must be initialized here — module scripts are deferred and run after
+    // the inline <script> at the bottom of <body>, so window.firebase* are not
+    // yet defined when init() runs. Registering auth here guarantees Firebase
+    // is fully ready before any auth calls are made.
+    getRedirectResult(auth).then(result => {
+      if (result && result.user) {
+        console.log('Redirect sign-in complete:', result.user.displayName);
+      }
+    }).catch(e => {
+      console.error('Redirect result error:', e);
+      if (e.code !== 'auth/redirect-cancelled-by-user') {
+        alert('Sign-in failed. Please try again.');
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.onUserSignedIn(user);
+      } else {
+        window.onUserSignedOut();
+      }
+    });
   </script>
 </head>
 <body>
@@ -1135,26 +1158,6 @@
     applyDarkMode();
     renderCards();
 
-    // Complete the redirect sign-in flow if returning from Google OAuth
-    window.firebaseGetRedirectResult(window.firebaseAuth).then(result => {
-      if (result && result.user) {
-        console.log('Redirect sign-in complete:', result.user.displayName);
-      }
-    }).catch(e => {
-      console.error('Redirect result error:', e);
-      if (e.code !== 'auth/redirect-cancelled-by-user') {
-        alert('Sign-in failed. Please try again.');
-      }
-    });
-
-    // Listen for Firebase auth state changes
-    window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
-      if (user) {
-        onUserSignedIn(user);
-      } else {
-        onUserSignedOut();
-      }
-    });
   }
 
   init();
